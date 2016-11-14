@@ -9,18 +9,20 @@
 <p id = "songname">{{ songs.0.song_title }}</p> 
 </div>
 <div id = "buttons">
-<ul>
-<li><p id = "currenttime"></p></li>
-<li><progress id="seekbar" value="0" max="1"></progress></li>
-<li><p id = "totallength"></p></li>
-</ul>
+<table>
+<tr>
+<td><p id = "currenttime"></p></td>
+<td><progress id="seekbar" value="0" max="1"></progress></td>
+<td><p id = "totallength"></p></td>
+</tr>
+</table>
+</div>
 <div id = "menu">  
-<audio src="{{ songs.0.file.url }}" data-title = "{{ songs.0.song_title }}" id="player"></audio>
+<audio src="{{ songs.0.file.url }}" id="player"></audio>
 <button id = "prev" onclick = "prev()">PREV</button>
 <button id = "play" onclick = "play()">PLAY</button>
 <button id = "next" onclick = "next()">NEXT</button>
 <input id="volume" min="0" max="1" step="0.1" type="range" onchange="setVolume()"/>
-</div>
 </div>
 <div id = "category">
 <ul>
@@ -39,9 +41,10 @@
 </div>
 <script>
 document.getElementById('seekbar').addEventListener('click', function (e) {
-    var percent = e.offsetX / this.offsetWidth;
-    var audio = document.getElementById('player');
-    audio.currentTime = percent * audio.duration;
+    var player = document.getElementById('player');
+    var bar = document.getElementById('seekbar');
+    var percent = e.offsetX / bar.offsetWidth;
+    player.currentTime = percent * player.duration;
 });
 document.getElementById('player').addEventListener("timeupdate", function() {
 	document.getElementById("seekbar").value = this.currentTime/this.duration; 
@@ -79,19 +82,20 @@ function playsong(song,file) {
 function resetPlayer() {
 	var playpause = document.getElementById("play");
 	var player = document.getElementById('player');
-	playpause.title = "play";
 	playpause.innerHTML = "PAUSE";
 	if (player.currentTime > 0) player.currentTime = 0;
-	   document.getElementById("seekbar").value = 0;
+	
 }
 function next() {
 	var p = document.getElementById('player');
+	var title = document.getElementById('songname');
+	var currsong = title.innerHTML;
 	var pos = 0;
 	var ans = -1;
 	var nextsongtitle;
 	var nextsongurl;
 	{% for song in songs %}
-		if ('{{ song.song_title }}' == p.title) {
+		if ('{{ song.song_title }}' == currsong) {
 			ans = pos;
 		}
 		else {
@@ -110,6 +114,8 @@ function next() {
 }
 function prev() {
 	var p = document.getElementById('player');
+	var title = document.getElementById('songname');
+	var currsong = title.innerHTML;
 	var pos = 0;
 	var ans = -1;
 	var prevsongtitle;
@@ -117,7 +123,7 @@ function prev() {
 	var title;
 	var url;
 	{% for song in songs %}
-		if ('{{ song.song_title }}' == p.title) {
+		if ('{{ song.song_title }}' == currsong) {
 			ans = pos;
 		}
 		else {
