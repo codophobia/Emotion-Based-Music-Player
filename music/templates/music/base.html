@@ -231,43 +231,43 @@ function listsongs() {
 }
 function showpsongs(name) {
 	document.getElementById('songlist').innerHTML = "";
+	var y = document.getElementById('songlist');
+    var y1 = document.getElementById('songlist2');
+    y1.innerHTML = '';
+    var b = document.createElement('BUTTON');
+    var b1 = document.createElement('BUTTON');
+    var td1 = document.createElement('td');
+    var td2 = document.createElement('td');
+    td1.id = "back";
+    var p = document.createElement('p');
+    p.innerHTML = name;
+    p.style.color = "white";
+    b.innerHTML = 'Add Songs';
+    b1.innerHTML = 'Go Back';
+    var t1 = document.createElement('table');
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.appendChild(b);
+    td1.appendChild(b1);
+    td2.appendChild(p);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td);
+    t1.appendChild(tr);
+    y1.appendChild(t1);
+    b.name = name;
+    b.onclick = function f() {
+    	addplaylistsongs(name);
+    };
+    b1.onclick = function f() {
+    	showplaylist();
+    }
 	$.ajax({
     url: '/psongs/',
     type:"POST",
 	cache:false,
 	data:{'name':name},
     success: function(data) {
-    	var y = document.getElementById('songlist');
-    	var y1 = document.getElementById('songlist2');
-    	y1.innerHTML = '';
-    	var b = document.createElement('BUTTON');
-    	var b1 = document.createElement('BUTTON');
-    	var td1 = document.createElement('td');
-    	var td2 = document.createElement('td');
-    	td1.id = "back";
-    	var p = document.createElement('p');
-    	p.innerHTML = name;
-    	p.style.color = "white";
-    	b.innerHTML = 'Add Songs';
-    	b1.innerHTML = 'Go Back';
-    	var t1 = document.createElement('table');
-    	var tr = document.createElement('tr');
-    	var td = document.createElement('td');
-    	td.appendChild(b);
-    	td1.appendChild(b1);
-    	td2.appendChild(p);
-    	tr.appendChild(td1);
-    	tr.appendChild(td2);
-    	tr.appendChild(td);
-    	t1.appendChild(tr);
-    	y1.appendChild(t1);
-    	b.name = name;
-    	b.onclick = function f() {
-    		addplaylistsongs(name);
-    	};
-    	b1.onclick = function f() {
-    		showplaylist();
-    	}
     	var t = document.createElement('table');
     	for(var i = 0; i < data.length; i++) {
     		var tr = document.createElement('tr');
@@ -300,28 +300,28 @@ function showpsongs(name) {
 function showplaylist() {
 	document.getElementById('songlist').innerHTML = "";
 	document.getElementById('songlist2').innerHTML = "";
+	var y = document.getElementById('songlist');
+    var x = document.getElementById('songlist2');
+    var b = document.createElement('BUTTON');
+    b.innerHTML = 'Add Playlist';
+    var t1 = document.createElement('table');
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.appendChild(b);
+    tr.appendChild(td);
+    t1.appendChild(tr);
+    x.appendChild(t1);
+    b.onclick = function f() {
+    	var name = prompt("Enter playlist name");
+    	if (!(name === null || name === false || name === "")) {
+     		createplaylist(name);
+     	}
+    };
 	$.ajax({
     url: '/playlist/',
     type:"POST",
 	cache:false,
     success: function(data) {
-    	var y = document.getElementById('songlist');
-    	var x = document.getElementById('songlist2');
-    	var b = document.createElement('BUTTON');
-    	b.innerHTML = 'Add Playlist';
-    	var t1 = document.createElement('table');
-    	var tr = document.createElement('tr');
-    	var td = document.createElement('td');
-    	td.appendChild(b);
-    	tr.appendChild(td);
-    	t1.appendChild(tr);
-    	x.appendChild(t1);
-    	b.onclick = function f() {
-    		var name = prompt("Enter playlist name");
-    		if (!(name === null || name === false || name === "")) {
-     			createplaylist(name);
-     		}
-    	};
     	var t = document.createElement('table');
     	for(var i = 0; i < data.length; i++) {
     		var tr = document.createElement('tr');
