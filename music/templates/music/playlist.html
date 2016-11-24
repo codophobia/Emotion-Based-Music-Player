@@ -1,0 +1,7 @@
+{% extends 'music/base.html' %}
+
+{% block content %}
+    {% for playlist in playlists %}
+        <li><button onclick = "listsongs('{{ playlist.name }}')">{{ playlist.name }}</button></li>
+    {% endfor %}
+{% endblock %}

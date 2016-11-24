@@ -2,8 +2,9 @@
 <html>
 <head>
 <link rel="stylesheet" href="{% static 'home.css' %}" type="text/css">
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 </head>
-<body>
+<body onload = "listsongs()">
 <div id = "musicplayer">
 <div id = "details">
 <p id = "songname">{{ songs.0.song_title }}</p> 
@@ -26,20 +27,21 @@
 </div>
 <div id = "category">
 <ul>
-  <li><a href="{% url 'home' %}">All Songs</a></li>
-  <li><a href="">Playlists</a></li>
-  <li><a href="">Favourites</a></li>
+  <li><a href="#" onclick = "listsongs()">All Songs</a></li>
+  <li><a href="#" onclick = "showplaylist()">Playlists</a></li>
+  <li><a href="#">Favourites</a></li>
 </ul>
 </div>
-<div id = "songlist">
-<ul>
-    {% for song in songs %}
-    		<li><button  onclick = "playsong('{{ song.song_title }}','{{ song.file.url }}')">{{ song.song_title }}</button></li>
-    {% endfor %}
-    </ul>
+<div id = "songlist2" class = 'scroll'>
 </div>
+<div id = "songlist" class = 'scroll'>
 </div>
+
 <script>
+var isplay = 0;
+var pname = "";
+var tisplay = 0;
+var tpname = "";
 document.getElementById('seekbar').addEventListener('click', function (e) {
     var player = document.getElementById('player');
     var bar = document.getElementById('seekbar');
@@ -71,10 +73,10 @@ function formatTime(seconds) {
 
 function playsong(song,file) {
 	resetPlayer();
-	document.getElementById('songname').innerHTML = song ;
+	file = "/media/" + file;
+	document.getElementById('songname').innerHTML = song;
 	var player = document.getElementById('player');
 	player.src = file;
-	player.title = song;
 	player.load();
 	player.play();
 }
@@ -90,56 +92,37 @@ function next() {
 	var p = document.getElementById('player');
 	var title = document.getElementById('songname');
 	var currsong = title.innerHTML;
-	var pos = 0;
-	var ans = -1;
-	var nextsongtitle;
-	var nextsongurl;
-	{% for song in songs %}
-		if ('{{ song.song_title }}' == currsong) {
-			ans = pos;
-		}
-		else {
-			pos = pos+1;
-		}
-		if(ans >= 0 && pos == ans+1) {
-			nextsongtitle = '{{ song.song_title }}';
-			nextsongurl = '{{ song.file.url }}';
-		}
-	{% endfor %}
-	if('{{ songs|length}}' == ans+1) {
-		nextsongtitle = '{{ songs.0.song_title }}';
-		nextsongurl = '{{ songs.0.file.url }}';
-	}
-	playsong(nextsongtitle,nextsongurl);
+	$.ajax({
+    url: '/next/',
+    data:{'isplay':isplay,'pname':pname,'currsong':currsong},
+    type:"POST",
+	cache:false,
+    success: function(data) {
+    	playsong(data[0]['fields']['song_title'],data[0]['fields']['file'])
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
 }
 function prev() {
 	var p = document.getElementById('player');
 	var title = document.getElementById('songname');
 	var currsong = title.innerHTML;
-	var pos = 0;
-	var ans = -1;
-	var prevsongtitle;
-	var prevsongurl;
-	var title;
-	var url;
-	{% for song in songs %}
-		if ('{{ song.song_title }}' == currsong) {
-			ans = pos;
-		}
-		else {
-			pos = pos+1;
-		}
-		if(ans >= 0 && pos == ans) {
-			prevsongtitle = title;
-			prevsongurl = url;
-		}
-		title = '{{ song.song_title }}';
-		url = '{{ song.file.url }}';
-	{% endfor %}
-	if(ans != 0) {
-		playsong(prevsongtitle,prevsongurl);
-	}
+	$.ajax({
+    url: '/prev/',
+    data:{'isplay':isplay,'pname':pname,'currsong':currsong},
+    type:"POST",
+	cache:false,
+    success: function(data) {
+    	playsong(data[0]['fields']['song_title'],data[0]['fields']['file'])
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
 }
+	
 function play() {
 	var player = document.getElementById('player');
 	var button = document.getElementById('play');
@@ -159,6 +142,322 @@ function setVolume() {
    var player = document.getElementById('player');
    player.volume = volume.value;
 }
+function deletesong(song) {
+	$.ajax({
+    url: '/deletesong/',
+    type:"POST",
+	cache:false,
+	data:{'song':song},
+    success: function(data) {
+    	listsongs();
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function deleteplaylistsong(song,playlist) {
+	$.ajax({
+    url: '/deleteplaylistsong/',
+    type:"POST",
+	cache:false,
+	data:{'song':song,'playlist':playlist},
+    success: function(data) {
+    	showpsongs(tpname);
+    	
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function deleteplaylist(playlist) {
+	$.ajax({
+    url: '/deleteplaylist/',
+    type:"POST",
+	cache:false,
+	data:{'playlist':playlist},
+    success: function(data) {
+    	showplaylist();
+    	
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+
+function listsongs() {
+	$.ajax({
+    url: '/songs/',
+    type:"POST",
+	cache:false,
+    success: function(data) {
+    	var y = document.getElementById('songlist');
+    	var x = document.getElementById('songlist2');
+    	y.innerHTML = "";
+    	x.innerHTML = "";
+    	var t = document.createElement('table');
+    	for(var i = 0; i < data.length; i++) {
+    
+    		var tr = document.createElement('tr');
+    		var b = document.createElement('BUTTON');
+    		var b1 = document.createElement('BUTTON');
+    		var td1 = document.createElement('td');
+    		var td2 = document.createElement('td');
+    		b1.id = "dbutton";
+    		b.innerHTML = data[i]['fields']['song_title'];
+    		td1.appendChild(b);
+    		td2.appendChild(b1);
+    		tr.appendChild(td1);
+    		tr.appendChild(td2);
+    		t.appendChild(tr);
+    		var song = data[i]['fields']['song_title'];
+    		var file = data[i]['fields']['file'];
+    		b.song = song;
+    		b.file = file;
+    		b1.file = file;
+    		b1.song = song;
+    		b.onclick = function f() { isplay = 0;playsong(this.song,this.file);};
+    		b1.onclick = function f1() { deletesong(this.song);};
+    		b.innerHTML = data[i]['fields']['song_title'];
+    	}
+    	y.appendChild(t);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function showpsongs(name) {
+	document.getElementById('songlist').innerHTML = "";
+	$.ajax({
+    url: '/psongs/',
+    type:"POST",
+	cache:false,
+	data:{'name':name},
+    success: function(data) {
+    	var y = document.getElementById('songlist');
+    	var y1 = document.getElementById('songlist2');
+    	y1.innerHTML = '';
+    	var b = document.createElement('BUTTON');
+    	var b1 = document.createElement('BUTTON');
+    	var td1 = document.createElement('td');
+    	var td2 = document.createElement('td');
+    	td1.id = "back";
+    	var p = document.createElement('p');
+    	p.innerHTML = name;
+    	p.style.color = "white";
+    	b.innerHTML = 'Add Songs';
+    	b1.innerHTML = 'Go Back';
+    	var t1 = document.createElement('table');
+    	var tr = document.createElement('tr');
+    	var td = document.createElement('td');
+    	td.appendChild(b);
+    	td1.appendChild(b1);
+    	td2.appendChild(p);
+    	tr.appendChild(td1);
+    	tr.appendChild(td2);
+    	tr.appendChild(td);
+    	t1.appendChild(tr);
+    	y1.appendChild(t1);
+    	b.name = name;
+    	b.onclick = function f() {
+    		addplaylistsongs(name);
+    	};
+    	b1.onclick = function f() {
+    		showplaylist();
+    	}
+    	var t = document.createElement('table');
+    	for(var i = 0; i < data.length; i++) {
+    		var tr = document.createElement('tr');
+    		var b = document.createElement('BUTTON');
+    		var b1 = document.createElement('BUTTON');
+    		var td1 = document.createElement('td');
+    		var td2 = document.createElement('td');
+    		b1.id = "dbutton";
+    		b.innerHTML = data[i]['fields']['song_title'];
+    		td1.appendChild(b);
+    		td2.appendChild(b1);
+    		tr.appendChild(td1);
+    		tr.appendChild(td2);
+    		t.appendChild(tr);
+    		var song = data[i]['fields']['song_title'];
+    		var file = data[i]['fields']['file'];
+    		b.song = song;
+    		b.file = file;
+    		b1.song =song;
+    		b.onclick = function f() {isplay = 1; pname = name; playsong(this.song,this.file);};
+    		b1.onclick = function f1() { tisplay = 1;tpname = name;deleteplaylistsong(this.song,name);};
+    	}
+    	y.appendChild(t);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function showplaylist() {
+	document.getElementById('songlist').innerHTML = "";
+	document.getElementById('songlist2').innerHTML = "";
+	$.ajax({
+    url: '/playlist/',
+    type:"POST",
+	cache:false,
+    success: function(data) {
+    	var y = document.getElementById('songlist');
+    	var x = document.getElementById('songlist2');
+    	var b = document.createElement('BUTTON');
+    	b.innerHTML = 'Add Playlist';
+    	var t1 = document.createElement('table');
+    	var tr = document.createElement('tr');
+    	var td = document.createElement('td');
+    	td.appendChild(b);
+    	tr.appendChild(td);
+    	t1.appendChild(tr);
+    	x.appendChild(t1);
+    	b.onclick = function f() {
+    		var name = prompt("Enter playlist name");
+    		if (!(name === null || name === false || name === "")) {
+     			createplaylist(name);
+     		}
+    	};
+    	var t = document.createElement('table');
+    	for(var i = 0; i < data.length; i++) {
+    		var tr = document.createElement('tr');
+    		var b = document.createElement('BUTTON');
+    		var b1 = document.createElement('BUTTON');
+    		var td1 = document.createElement('td');
+    		var td2 = document.createElement('td');
+    		b1.id = "dbutton";
+    		b.innerHTML = data[i]['fields']['song_title'];
+    		td1.appendChild(b);
+    		td2.appendChild(b1);
+    		tr.appendChild(td1);
+    		tr.appendChild(td2);
+    		t.appendChild(tr);
+    		var song = data[i]['fields']['song_title'];
+    		var file = data[i]['fields']['file'];
+    		b.name = data[i]['fields']['name'];
+    		b1.name = b.name;
+    		b1.onclick = function f1() { deleteplaylist(this.name);};
+    		b.onclick = function f() {showpsongs(this.name);};
+    		b.innerHTML = data[i]['fields']['name'];
+    	}
+    	y.appendChild(t);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function createplaylist(name) {
+	$.ajax({
+    url: '/createplaylist/',
+    type:"POST",
+	cache:false,
+	data:{'name':name},
+    success: function(data) {
+    	showplaylist();
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+function addtoplaylist(name,len) {
+	var a = [];
+	for(var i = 0; i < len; i++) {
+		if(document.getElementById('cb'+i).checked) {
+			a.push(document.getElementById('cb'+i).val);
+		}
+	}
+	$.ajax({
+    url: '/addtoplaylist/',
+    type:"POST",
+	cache:false,
+	data:{'name':name,'songs[]':a},
+    success: function(data) {
+    	showpsongs(name);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+
+
+	
+
+}
+function addplaylistsongs(name) {
+	var x = document.getElementById('songlist');
+	x.innerHTML = '';
+	var t = document.createElement('table');
+	t.id = "pt";
+	$.ajax({
+    url: '/addplaylistsongs/',
+    type:"POST",
+	cache:false,
+	data:{'name':name},
+    success: function(data) {
+    	var b = document.createElement('BUTTON');
+    	var b1 = document.createElement('BUTTON');
+    	var td1 = document.createElement('td');
+    	var y1 = document.getElementById('songlist2');
+    	y1.innerHTML = '';
+    	b.innerHTML = 'Submit';
+    	b1.innerHTML = 'Go Back';
+    	var t1 = document.createElement('table');
+    	var tr = document.createElement('tr');
+    	var td = document.createElement('td');
+    	td.appendChild(b);
+    	td1.appendChild(b1);
+    	tr.appendChild(td1);
+    	tr.appendChild(td);
+    	t1.appendChild(tr);
+    	y1.appendChild(t1);
+    	b.name = name;
+    	t1.id = 'statictable';
+    	b.onclick = function f() {
+    		addtoplaylist(name,data.length);
+    	};
+    	b1.onclick = function f() {
+    		showpsongs(name);
+    	}
+    	for(var i = 0; i < data.length; i++) {
+    		var tr = document.createElement('tr');
+    		var td1 = document.createElement('td');
+    		var td2 = document.createElement('td');
+    		var z = document.createElement("input"); 
+    		var l = document.createElement('label')
+    		z.type = "checkbox";
+    		z.id = "cb"+i;
+    		z.val = data[i]['fields']['song_title'];
+    		l.innerHTML = data[i]['fields']['song_title'];
+			td1.appendChild(z);
+			td2.appendChild(l);
+			tr.appendChild(td1);
+			tr.appendChild(td2);
+			t.appendChild(tr);
+			tr.id = 'ptr';
+			td1.id = 'ptd1';
+			td2.id = 'ptd2';
+    	}
+    	
+    	var tr = document.createElement('tr');
+    	var td1 = document.createElement('td');
+    	tr.appendChild(td1);
+    	t.appendChild(tr);
+    	x.appendChild(t);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
+
+
+
 
 </script>
 </body>

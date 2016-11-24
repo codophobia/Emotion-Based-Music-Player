@@ -1,0 +1,30 @@
+<html>
+<body onload = "fun()">
+<div id = "sample">
+</div>
+<script type="text/javascript">
+function f1() {
+	var x = document.getElementByClassName('inp');
+	alert(x.val);
+}
+function fun() {
+	x = document.getElementById("sample");
+	i = document.createElement('input');
+	ii = document.createElement('input');
+	i.type = "radio";
+	i.val = "xxxx";
+	i.className = "inp";
+	ii.type = "radio";
+	ii.val = "xxxx";
+	ii.className = "inp";
+	b = document.createElement('button');
+	b.onclick = function f() {
+		f1();
+	}
+	x.appendChild(i);
+	x.appendChild(ii);
+	x.appendChild(b);
+	
+}
+</script>
+</body>
