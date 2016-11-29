@@ -13,5 +13,6 @@ urlpatterns = [
    	url(r'^addtoplaylist/$',views.addtoplaylist,name='addtoplaylist'),
    	url(r'^deleteplaylistsong/$',views.deleteplaylistsong,name='deleteplaylistsong'),
    	url(r'^deleteplaylist/$',views.deleteplaylist,name='deleteplaylist'),
+      url(r'^mooddetect/$',views.mooddetect,name='mooddetect'),
 
 ]

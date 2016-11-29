@@ -7,7 +7,7 @@ html, body {
   	margin: auto;
   	top: 0;
   	right: 0;
-  	bottom: 0;
+  	bottom: 100px;
   	left: 0;
 	height:400px;
 	width:330px;
@@ -235,6 +235,27 @@ p {
 #pt {
 	width:318px;
 	table-layout: fixed;
+}
+#mood {
+	margin:10px 125px;
+}
+#mood button {
+	width:70px;
+	height:30px;
+	background-color: black;
+	color:white;
+}
+#photo {
+	position: absolute;
+	right:10px;
+	left:900px;
+	top:135px;
+	bottom:135px;
+	border:1px solid black;
+}
+#photo img {
+	height: 100%;
+	width: 100%;
 }
 
 
