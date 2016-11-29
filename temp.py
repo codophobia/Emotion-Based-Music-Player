@@ -50,7 +50,7 @@ def vector(xpoints,ypoints,nxpoints,nypoints,xmean,ymean):
 
 detector = dlib.get_frontal_face_detector() #Face detector
 predictor = dlib.shape_predictor("./music/static/shape_predictor_68_face_landmarks.dat") #Landmark 
-d = {"HA":0,"SA":1,"SU":2,"AN":3}
+d = {"HA":0,"SA":1}
 def landmark_detector(frame):
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
@@ -81,7 +81,7 @@ def trainfiles():
 			if angle == 'S':
 				image = cv2.imread(fname)
 				v = landmark_detector(image)
-				if len(v) > 0 and (exp == 'HA' or exp == 'SA' or exp == 'SU' or exp == "AN"):
+				if len(v) > 0 and (exp == 'HA' or exp == 'SA'):
 					training_data.append(v)
 					training_label.append(d[exp])
 
@@ -97,7 +97,7 @@ def testfiles():
 			if angle == 'S':
 				image = cv2.imread(fname)
 				v = landmark_detector(image)
-				if len(v) > 0 and exp == 'HA' or exp == 'SA' or exp == "SU" or exp == "AN":
+				if len(v) > 0 and exp == 'HA' or exp == 'SA':
 					test_data.append(v)
 					images.append(image)
 
@@ -119,7 +119,20 @@ def test():
 	return landmark_detector(image),image
 
 def display():
-
-	train()
+	
+	webcam()
+	t,image = test()
+	cl = joblib.load('train.pkl')
+	image1 = np.array(t)
+	mood = cl.predict(image1)
+	print cl.predict_proba(image1)
+	ans = mood[0]
+	s = ""
+	if ans == 0:
+		s = "happy"
+	elif ans == 1:
+		s = "sad"
+	cv2.imshow(s,image)
+	cv2.waitKey(0)
 
 display()
