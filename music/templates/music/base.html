@@ -7,10 +7,14 @@
 <body onload = "listsongs()">
 <div id = "photo">
 </div>
+<div id = "leftbar">
+</div>
+<div id = "header">
+<h1>Moody - Emotion Based Music Player</h1>
 </div>
 <div id = "musicplayer">
 <div id = "mood">
-<button id = "click" onclick = "mooddetect(1)">Enable Moody</button>
+<button id = "click" style = "width:150px;background-color:#191919;"  onclick = "mooddetect(1)">Enable Moody</button>
 </div>
 <div id = "details">
 <p id = "songname">{{ songs.0.song_title }}</p> 
@@ -33,16 +37,31 @@
 </div>
 <div id = "category">
 <ul>
-  <li><a href="#" onclick = "listsongs()">All Songs</a></li>
+  <li><a href="{% url 'home' %}" onclick = "listsongs()">All Songs</a></li>
   <li><a href="#" onclick = "showplaylist()">Playlists</a></li>
   <li><a href="#">Favourites</a></li>
 </ul>
 </div>
-<div id = "songlist2" class = 'scroll'>
+<div id = "songlist2" style = "margin:0;border-bottom:1px solid black;height:40px;">
+<form name = "form" enctype = "multipart/form-data" 
+         action = "/upload/" method = "POST" >
+<table style="width:318px;
+    table-layout: fixed;">
+<tr>
+         
+<td style ="width:220px;padding:0;margin:0;"><input type = "file" placeholder = "Picture" name = "picture" /></td>
+<td style = "padding:0;margin:0;"><button type = sumbit>Upload</button></td>
+</tr>
+</table>
+         
+</form>
 </div>
 <div id = "songlist" class = 'scroll'>
 </div>
-
+</div>
+<div id = "footer">
+<b><p style="padding:10px;">Created By - IIT2013163,11T2013056,IIT2013031</p></b>
+</div>
 <script>
 var isplay = 0;
 var pname = "";
@@ -50,6 +69,7 @@ var tisplay = 0;
 var tpname = "";
 var happy = [];
 var sad = [];
+var sur = [];
 var cnt = 0;
 var hcount = 0;
 var scount = 0;
@@ -107,15 +127,20 @@ function mooddetect(z) {
     success: function(input) {
         if(input.mood != "not found") {
             var mood = parseInt(input.mood);
+            var flag = parseInt(input.flag);
             var m = "sad";
-            if (mood == 0) {
+            if(flag == 1) {
+                m = "surprise";
+            }
+            else if (mood == 0) {
                 m = "happy";
             }
             var x = document.getElementById('photo');
             var p = document.createElement('p');
             var p1 = document.createElement('p');
             p1.style.color = "black";
-            p1.innerHTML = "happycnt:" + input.hcount + "," + "sadcnt:" + input.scount;
+            p1.id = "ecount";
+            p1.innerHTML = "happycnt:" + input.hcount + "," + "sadcnt:" + input.scount + "sucount:" + input.sucount;
             p.style.color = "black";
             p.innerHTML = m;
             x.innerHTML = "";
@@ -134,16 +159,20 @@ function mooddetect(z) {
                     document.getElementById('next').click();
                 }
                 else {
-                    pmood = m;
+                    pmood = fmood;
                     pname = fmood;
                     isplay = 1;
                     if(pname == "happy") {
                         happy = data;
                         showpsongs("happy");
                     }
-                    else {
+                    else if(pname == "sad") {
                         sad = data;
                         showpsongs("sad");
+                    }
+                    else {
+                        sur = data;
+                        showpsongs("surprise");
                     }
                     playsong(data[0]['fields']['song_title'],data[0]['fields']['file']);
                 }
@@ -153,7 +182,7 @@ function mooddetect(z) {
 
     },
     error: function(xhr, textStatus, errorThrown){
-       alert("error");
+       
     }
 }); 
 }
@@ -182,13 +211,26 @@ function resetPlayer() {
 	if (player.currentTime > 0) player.currentTime = 0;
 	
 }
+function clearcount() {
+    $.ajax({
+    url: '/clearcount/',
+    type:"POST",
+    cache:false,
+    success: function(data) {
+        
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
 function next() {
 	var p = document.getElementById('player');
 	var title = document.getElementById('songname');
 	var currsong = title.innerHTML;
-    if(isplay == 1 && pname == "happy" || pname == "sad") {
+    if(isplay == 1 && (pname == "happy" || pname == "sad") && document.getElementById('click').innerHTML == "Disable Moody") {
         clearInterval(t);
-        t = setInterval(mooddetect, 5000);
+        clearcount();
         if(pname == "happy") {
             for(var i = 0; i < happy.length; i++) {
                 if(happy[i]['fields']['song_title'] == currsong) {
@@ -203,6 +245,14 @@ function next() {
                 }
             }
         }
+        if(pname == "surprise") {
+            for(var i = 0; i < sur.length; i++) {
+                if(sur[i]['fields']['song_title'] == currsong) {
+                    playsong(sur[(i+1)%(sur.length)]['fields']['song_title'],sur[(i+1)%(sur.length)]['fields']['file']);
+                }
+            }
+        }
+        t = setInterval(mooddetect, 5000);
     }
     else {
     	$.ajax({
@@ -224,18 +274,46 @@ function prev() {
 	var p = document.getElementById('player');
 	var title = document.getElementById('songname');
 	var currsong = title.innerHTML;
-	$.ajax({
-    url: '/prev/',
-    data:{'isplay':isplay,'pname':pname,'currsong':currsong},
-    type:"POST",
-	cache:false,
-    success: function(data) {
-    	playsong(data[0]['fields']['song_title'],data[0]['fields']['file'])
-    },
-    failure: function(data) { 
-        alert('Got an error dude');
+    if(isplay == 1 && (pname == "happy" || pname == "sad") && document.getElementById('click').innerHTML == "Disable Moody") {
+        cnt = 0;
+        clearInterval(t);
+        if(pname == "happy") {
+            for(var i = 0; i < happy.length; i++) {
+                if(happy[i]['fields']['song_title'] == currsong && i > 0) {
+                    playsong(happy[(i-1)%(happy.length)]['fields']['song_title'],happy[(i-1)%(happy.length)]['fields']['file']);
+                }
+            }
+        }
+        if(pname == "sad") {
+            for(var i = 0; i < sad.length; i++) {
+                if(sad[i]['fields']['song_title'] == currsong && i > 0) {
+                    playsong(sad[(i-1)%(sad.length)]['fields']['song_title'],sad[(i-1)%(sad.length)]['fields']['file']);
+                }
+            }
+        }
+        if(pname == "surprise") {
+            for(var i = 0; i < sur.length; i++) {
+                if(sur[i]['fields']['song_title'] == currsong && i > 0) {
+                    playsong(sur[(i-1)%(sur.length)]['fields']['song_title'],sur[(i-1)%(sur.length)]['fields']['file']);
+                }
+            }
+        }
+         t= setInterval(mooddetect, 5000);
     }
-}); 
+    else {
+    	$.ajax({
+        url: '/prev/',
+        data:{'isplay':isplay,'pname':pname,'currsong':currsong},
+        type:"POST",
+    	cache:false,
+        success: function(data) {
+        	playsong(data[0]['fields']['song_title'],data[0]['fields']['file'])
+        },
+        failure: function(data) { 
+            alert('Got an error dude');
+        }
+    }); 
+    }
 }
 	
 function play() {
@@ -312,7 +390,7 @@ function listsongs() {
     	var y = document.getElementById('songlist');
     	var x = document.getElementById('songlist2');
     	y.innerHTML = "";
-    	x.innerHTML = "";
+    	
     	var t = document.createElement('table');
     	for(var i = 0; i < data.length; i++) {
     
@@ -389,6 +467,9 @@ function showpsongs(name) {
         }
         if(name == "sad" && sad.length > 0) {
             data = sad;
+        }
+        if(name == "surprise" && sur.length > 0) {
+            data = sur;
         }
     	var t = document.createElement('table');
     	for(var i = 0; i < data.length; i++) {

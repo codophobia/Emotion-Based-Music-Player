@@ -14,5 +14,7 @@ urlpatterns = [
    	url(r'^deleteplaylistsong/$',views.deleteplaylistsong,name='deleteplaylistsong'),
    	url(r'^deleteplaylist/$',views.deleteplaylist,name='deleteplaylist'),
       url(r'^mooddetect/$',views.mooddetect,name='mooddetect'),
+      url(r'^clearcount/$',views.clearcount,name='clearcount'),
+      url(r'^upload/$',views.upload,name='upload'),
 
 ]

@@ -2,16 +2,52 @@ html, body {
 	margin:0;
 	padding:0;
 }
+body {
+	background-image: url('player.jpg');
+	background-size: 100%;
+	background-repeat: no-repeat;
+
+}
 #musicplayer{
 	position: absolute;
   	margin: auto;
   	top: 0;
   	right: 0;
-  	bottom: 100px;
+  	bottom: 70px;
   	left: 0;
 	height:400px;
 	width:330px;
 	
+}
+#header {
+	background-color:black;
+	color:white;
+	position: absolute;
+	right:0px;
+	left:0px;
+	top:0px;
+	text-align: center;
+	bottom:580px;
+}
+#footer {
+	position: absolute;
+	right:0px;
+	left:0px;
+	top:630px;
+	bottom:0px;
+	text-align: center;
+	background-color: black;
+	color:white;
+}
+#leftbar {
+	position: absolute;
+	right:900px;
+	left:20px;
+	top:150px;
+	bottom:100px;
+	border:1px solid black;
+	text-align: center;
+	color:white;
 }
 .scroll{
     scrollbar-face-color: #367CD2;
@@ -53,8 +89,8 @@ p {
 	position:relative;
 	margin:0;
 	padding:0;
-	height:50px;
-	background-color: black;
+	height:40px;
+	background-color: #191919;
 	
 }
 
@@ -178,7 +214,7 @@ p {
     background-color:	#191919; /* Green */
     border: none;
     color: white;
-    padding: 10px 32px 0 0;
+    padding: 0px 32px 0 0;
     margin:0px;
     text-align: center;
     text-decoration: none;
@@ -237,7 +273,7 @@ p {
 	table-layout: fixed;
 }
 #mood {
-	margin:10px 125px;
+	margin:10px 90px;
 }
 #mood button {
 	width:70px;
@@ -249,11 +285,11 @@ p {
 	position: absolute;
 	right:10px;
 	left:900px;
-	top:135px;
-	bottom:135px;
+	top:150px;
+	bottom:100px;
 	border:1px solid black;
 }
-#photo img {
+img {
 	height: 100%;
 	width: 100%;
 }

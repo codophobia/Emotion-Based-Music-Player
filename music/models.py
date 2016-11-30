@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 from django.db import models
 
+
 class Song(models.Model):
 	song_title = models.CharField(max_length=250)
-	file = models.FileField(upload_to='/',default = "null")
+	file = models.FileField(upload_to='',default = "null")
 
 	class Meta:
 		ordering = ['song_title']

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.http import HttpResponse
 from django.conf import settings
 from models import Song,Playlist
@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from django.core import serializers
 import json
 import cv2
+from music.forms import DocumentForm
+from django.core.files.storage import FileSystemStorage
 from sklearn.svm import SVC
 from sklearn.externals import joblib
 import dlib
@@ -18,11 +20,36 @@ from PIL import Image
 
 hpy = []
 sd = []
+rmouth = 0
+ratio = 0
+hcount = 0
+scount = 0
+sucount = 0
 
+
+@csrf_exempt
+def clearcount(request):
+	global hcount,scount,sucount
+	hcount = scount = sucount = 0
+@csrf_exempt
+def upload(request):
+	if request.method == 'POST' and request.FILES['picture']:
+		myfile = request.FILES['picture']
+		fs = FileSystemStorage()
+		filename = fs.save(myfile.name, myfile)
+		uploaded_file_url = fs.url(filename)
+		f = uploaded_file_url.split('/')
+		fname = f[2]
+		s = Song()
+		s.song_title = filename
+		s.file = fname
+		s.save()
+		return redirect('home')
 def home(request):
 	global hcount,scount
 	hcount = 0
 	scount = 0
+	sucount = 0
 	song = Song.objects.all()
 	context = {"songs":song} 
 	return render(request,'music/base.html',context)
@@ -46,15 +73,13 @@ def next(request):
 		currsong = request.POST['currsong']
 		happy = request.POST.getlist('happy[]')
 		sad = request.POST.getlist('sad[]')
+		print isplay
 		if(isplay == 0):
 			next_song = Song.objects.all().filter(song_title__gt = currsong)[:1]
 			if not next_song:
 				next_song = Song.objects.all()[:1]
 		else:
 			pname = request.POST['pname']
-			if(len(happy) > 0 or len(sad) > 0):
-				print json.loads(happy)
-				print json.loads(sad)
 			p = Playlist.objects.get(name=pname)
 			next_song = p.songs.all().filter(song_title__gt = currsong)[:1]
 			if not next_song:
@@ -75,6 +100,7 @@ def prev(request):
 			p = Playlist.objects.get(name=pname)
 			next_song = p.songs.all().filter(song_title__lt = currsong)[:1]
 		data = serializers.serialize('json', next_song)
+		print data
 		return HttpResponse(data, content_type="application/json")
 @csrf_exempt
 def psongs(request):
@@ -187,10 +213,25 @@ def landmark_detector(frame):
 	clahe_image = clahe.apply(gray)
 	xpoints = []
 	ypoints = []
+	global ratio
 	detections = detector(clahe_image, 1) #Detect the faces in the image
 
 	for k,d in enumerate(detections): #For each detected face
 		shape = predictor(clahe_image, d) #Get coordinates
+		x1 = euclid(shape.part(48).x,shape.part(48).y,shape.part(54).x,shape.part(54).y)
+		y1 = 0.5*euclid(shape.part(43).x,shape.part(43).y,shape.part(47).x,shape.part(47).y)
+		y2 = 0.5*euclid(shape.part(38).x,shape.part(38).y,shape.part(40).x,shape.part(40).y)
+		y3 = euclid(shape.part(27).x,shape.part(27).y,shape.part(33).x,shape.part(33).y)
+		y4 = euclid(shape.part(21).x,shape.part(21).y,shape.part(22).x,shape.part(22).y)
+		y5 = euclid(shape.part(39).x,shape.part(39).y,shape.part(42).x,shape.part(42).y)
+		y6 = euclid(shape.part(50).x,shape.part(50).y,shape.part(57).x,shape.part(57).y)
+		reye = (y1+y2)/y3
+		rmouth = x1/(y1+y2)
+		reyebrow = (y4/y5)
+		ratio = max(x1,y6)/min(x1,y6)
+		print reye
+		print rmouth
+		print reyebrow
 		for i in range(1,68): #There are 68 landmark points on each face
 			cv2.circle(frame, (shape.part(i).x, shape.part(i).y), 1, (0,0,255), thickness=2) #For each point, draw a red circle with thickness2 on the original frame
 			xpoints.append(float(shape.part(i).x))
@@ -205,12 +246,11 @@ def test(cnt):
 	fname = "./music/static/detect/test.jpg" 
 	image = cv2.imread(fname)
 	return landmark_detector(image)
-hcount = 0
-scount = 0
+
 @csrf_exempt
 def mooddetect(request):
-	global hcount
-	global scount
+	global hcount,ratio
+	global scount,sucount
 	if request.method == 'POST':
 		cnt = request.POST['cnt']
 		webcam(cnt)
@@ -220,40 +260,55 @@ def mooddetect(request):
 			image = np.array(image)
 			mood = cl.predict(image)
 			m = mood[0]
-			if(m == 0):
+			flag = 0
+			if(ratio < 2):
+				sucount = sucount + 1
+				flag = 1
+			elif(m == 0):
 				hcount = hcount + 1
 			else:
 				scount = scount + 1
 			if(int(cnt) == 0):
-				if (hcount >= scount):
+				mx = max(hcount,scount,sucount)
+				if (mx == hcount):
 					x = "happy"
 					p = Playlist.objects.get(name='happy')
 					songs = p.songs.all().order_by('?')
-				else:
+				elif(mx == scount):
 					x = "sad"
 					p = Playlist.objects.get(name='sad')
 					songs = p.songs.all().order_by('?')
-				if(m == 0):
+				else:
+					x = "surprise"
+					p = Playlist.objects.get(name='surprise')
+					songs = p.songs.all().order_by('?')
+				if(flag == 1):
+					hcount = scount = 0
+					sucount = 1
+				elif(m == 0):
 					hcount = 1
-					scount = 0
+					scount = sucount = 0
 				else:
 					scount = 1
-					hcount = 0	
-				print x
+					hcount = sucount = 0	
 				data = json.loads(serializers.serialize('json', songs))
 				d = {}
 				d['result'] = data
 				d['mood'] = m
+				d['flag'] = flag
 				d['hcount'] = hcount
 				d['scount'] = scount
 				d['fmood'] = x
+				d['sucount'] = sucount
 				data = json.dumps(d)
 			else:
 				d = {}
 				d['mood'] = m
+				d['flag'] = flag
 				d['fmood'] = "happy"
 				d['hcount'] = hcount
 				d['scount'] = scount
+				d['sucount'] = sucount
 				data = json.dumps(d)
 			return HttpResponse(data, content_type="application/json")
 		except:

@@ -68,7 +68,22 @@ def landmark_detector(frame):
     if len(detections) < 1: 
         landmarks_vectorised = "error"
     return landmarks_vectorised
+def testfiles():
+    test_data = []
+    images = []
+    for files in os.listdir('./music/static/test'):
+        for file in os.listdir('./music/static/test/%s'%files):
+            fname = './music/static/test/%s/%s'%(files,file)
+            angle = file[6] 
+            exp = file[4] + file[5]
+            if angle == 'S':
+                image = cv2.imread(fname)
+                v = landmark_detector(image)
+                if len(v) > 0 and exp == 'HA' or exp == 'SU' or exp == 'SU':
+                    test_data.append(v)
+                    images.append(image)
 
+    return test_data,images
 def trainfiles():
     training_data = []
     training_label = []
@@ -80,7 +95,7 @@ def trainfiles():
             if angle == 'S':
                 image = cv2.imread(fname)
                 v = landmark_detector(image)
-                if len(v) > 0 and (exp == 'HA' or exp == 'SA' or exp == 'SU' or exp == "AN"):
+                if len(v) > 0 and (exp == 'HA' or exp == 'SA' or exp == 'SU'):
                     training_data.append(v)
                     training_label.append(d[exp])
 
@@ -99,8 +114,8 @@ def test():
     return landmark_detector(image),image
 
 def display():
-    webcam()
-    t,image = test()
+    trainfiles()
+    '''t,image = test()
     cl = joblib.load('train.pkl')
     image1 = np.array(t)
     mood = cl.predict(image1)
@@ -112,11 +127,9 @@ def display():
     elif ans == 1:
         s = "sad"
     elif ans == 2:
-        s = "surpr"
-    elif ans == 3:
-        s = "angry"
+        s = "sur"
     cv2.imshow(s,image)
-    cv2.waitKey(0)
+    cv2.waitKey(0)'''
     
 
 display()

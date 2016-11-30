@@ -47,11 +47,13 @@ def vector(xpoints,ypoints,nxpoints,nypoints,xmean,ymean):
 		dis = euclid(x,y,xmean,ymean)
 		v.append(dis)
 	return v
-
+su = 0
+cnt = 0
 detector = dlib.get_frontal_face_detector() #Face detector
 predictor = dlib.shape_predictor("./music/static/shape_predictor_68_face_landmarks.dat") #Landmark 
-d = {"HA":0,"SA":1}
+d = {"HA":0,"SU":1,"AN":2}
 def landmark_detector(frame):
+	global cnt,su
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 	clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 	clahe_image = clahe.apply(gray)
@@ -60,28 +62,56 @@ def landmark_detector(frame):
 	detections = detector(clahe_image, 1) #Detect the faces in the image
 
 	for k,d in enumerate(detections): #For each detected face
+		cnt = cnt+1
 		shape = predictor(clahe_image, d) #Get coordinates
+		x1 = euclid(shape.part(48).x,shape.part(48).y,shape.part(54).x,shape.part(54).y)
+		y1 = 0.5*euclid(shape.part(43).x,shape.part(43).y,shape.part(47).x,shape.part(47).y)
+		y2 = 0.5*euclid(shape.part(38).x,shape.part(38).y,shape.part(40).x,shape.part(40).y)
+		y3 = euclid(shape.part(27).x,shape.part(27).y,shape.part(33).x,shape.part(33).y)
+		y4 = euclid(shape.part(21).x,shape.part(21).y,shape.part(22).x,shape.part(22).y)
+		y5 = euclid(shape.part(39).x,shape.part(39).y,shape.part(42).x,shape.part(42).y)
+		y6 = euclid(shape.part(50).x,shape.part(50).y,shape.part(57).x,shape.part(57).y)
+		reye = (y1+y2)/y3
+		rmouth = x1/(y1+y2)
+		reyebrow = (y4/y5)
+		print max(x1,y6)/min(x1,y6)
 		for i in range(1,68): #There are 68 landmark points on each face
-			cv2.circle(frame, (shape.part(i).x, shape.part(i).y), 1, (0,0,255), thickness=2) #For each point, draw a red circle with thickness2 on the original frame
+			if(i == 50 or i == 57 or i == 48 or i == 54 or i == 43 or i == 47 or i == 38 or i == 40 or i == 21 or i == 22 or i == 39 or i == 42 or i == 27 or i == 33):
+				cv2.circle(frame, (shape.part(i).x, shape.part(i).y), 1, (0,0,255), thickness=2) #For each point, draw a red circle with thickness2 on the original frame
 			xpoints.append(float(shape.part(i).x))
 			ypoints.append(float(shape.part(i).y))
 	xmean = np.mean(xpoints)
 	ymean = np.mean(ypoints)
 	nxpoints,nypoints = normalize(xpoints,ypoints,xmean,ymean)
+	'''x1 = euclid(nxpoints[48],nypoints[48],nxpoints[54],nypoints[54])
+	y1 = 0.5*euclid(nxpoints[43],nypoints[43],nxpoints[47],nypoints[47])
+	y2 = 0.5*euclid(nxpoints[38],nypoints[38],nxpoints[40],nypoints[40])
+	y3 = euclid(nxpoints[27],nypoints[27],nxpoints[33],nypoints[33])
+	y4 = euclid(nxpoints[21],nypoints[21],nxpoints[22],nypoints[22])
+	y5 = euclid(nxpoints[39],nypoints[39],nxpoints[42],nypoints[42])
+	reye = (y1+y2)/y3
+	rmouth = x1/(y1+y2)
+	reyebrow = (y4/y5)
+	print rmouth
+	print reye
+	print reyebrow'''
 	feature = vector(xpoints,ypoints,nxpoints,nypoints,xmean,ymean)
 	return feature
 def trainfiles():
 	training_data = []
 	training_label = []
 	for files in os.listdir('./music/static/train'):
+		print files
 		for file in os.listdir('./music/static/train/%s'%files):
 			fname = './music/static/train/%s/%s'%(files,file)
 			angle = file[6] 
 			exp = file[4] + file[5]
 			if angle == 'S':
 				image = cv2.imread(fname)
-				v = landmark_detector(image)
-				if len(v) > 0 and (exp == 'HA' or exp == 'SA'):
+				if (exp == 'HA' or exp == 'SU' or exp == 'AN'):
+					v = landmark_detector(image)
+					cv2.imshow("",image)
+					cv2.waitKey(0)
 					training_data.append(v)
 					training_label.append(d[exp])
 
@@ -97,7 +127,7 @@ def testfiles():
 			if angle == 'S':
 				image = cv2.imread(fname)
 				v = landmark_detector(image)
-				if len(v) > 0 and exp == 'HA' or exp == 'SA':
+				if len(v) > 0 and exp == 'HA' or exp == 'SU':
 					test_data.append(v)
 					images.append(image)
 
@@ -119,20 +149,11 @@ def test():
 	return landmark_detector(image),image
 
 def display():
-	
 	webcam()
 	t,image = test()
-	cl = joblib.load('train.pkl')
-	image1 = np.array(t)
-	mood = cl.predict(image1)
-	print cl.predict_proba(image1)
-	ans = mood[0]
-	s = ""
-	if ans == 0:
-		s = "happy"
-	elif ans == 1:
-		s = "sad"
-	cv2.imshow(s,image)
+	cv2.imshow("",image)
 	cv2.waitKey(0)
+
+	
 
 display()
