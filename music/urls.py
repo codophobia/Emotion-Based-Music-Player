@@ -16,5 +16,6 @@ urlpatterns = [
       url(r'^mooddetect/$',views.mooddetect,name='mooddetect'),
       url(r'^clearcount/$',views.clearcount,name='clearcount'),
       url(r'^upload/$',views.upload,name='upload'),
+      url(r'^test/$',views.testfiles,name='testfiles'),
 
 ]

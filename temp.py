@@ -51,7 +51,7 @@ su = 0
 cnt = 0
 detector = dlib.get_frontal_face_detector() #Face detector
 predictor = dlib.shape_predictor("./music/static/shape_predictor_68_face_landmarks.dat") #Landmark 
-d = {"HA":0,"SU":1,"AN":2}
+d = {"HA":0,"SA":1,"NE":2}
 def landmark_detector(frame):
 	global cnt,su
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -76,7 +76,8 @@ def landmark_detector(frame):
 		reyebrow = (y4/y5)
 		print max(x1,y6)/min(x1,y6)
 		for i in range(1,68): #There are 68 landmark points on each face
-			if(i == 50 or i == 57 or i == 48 or i == 54 or i == 43 or i == 47 or i == 38 or i == 40 or i == 21 or i == 22 or i == 39 or i == 42 or i == 27 or i == 33):
+			#if(i == 50 or i == 57 or i == 48 or i == 54 or i == 43 or i == 47 or i == 38 or i == 40 or i == 21 or i == 22 or i == 39 or i == 42 or i == 27 or i == 33):
+			if (i >= 40 and i <= 50):
 				cv2.circle(frame, (shape.part(i).x, shape.part(i).y), 1, (0,0,255), thickness=2) #For each point, draw a red circle with thickness2 on the original frame
 			xpoints.append(float(shape.part(i).x))
 			ypoints.append(float(shape.part(i).y))
@@ -108,10 +109,9 @@ def trainfiles():
 			exp = file[4] + file[5]
 			if angle == 'S':
 				image = cv2.imread(fname)
-				if (exp == 'HA' or exp == 'SU' or exp == 'AN'):
+				if (exp == 'HA' or exp == 'SA'):
 					v = landmark_detector(image)
-					cv2.imshow("",image)
-					cv2.waitKey(0)
+					
 					training_data.append(v)
 					training_label.append(d[exp])
 
@@ -127,7 +127,7 @@ def testfiles():
 			if angle == 'S':
 				image = cv2.imread(fname)
 				v = landmark_detector(image)
-				if len(v) > 0 and exp == 'HA' or exp == 'SU':
+				if len(v) > 0 and exp == 'HA' or  exp == "SA":
 					test_data.append(v)
 					images.append(image)
 
@@ -149,10 +149,23 @@ def test():
 	return landmark_detector(image),image
 
 def display():
-	webcam()
 	t,image = test()
-	cv2.imshow("",image)
-	cv2.waitKey(0)
+	print len(t)
+	cl = joblib.load('train.pkl')
+	image1 = np.array(t)
+	mood = cl.predict(image1)
+	print cl.predict_proba(image1)
+	ans = mood[0]
+	s = ""
+	if ans == 0:
+		s = "happy"
+	elif ans == 1:
+		s = "sad"
+	elif ans == 2:
+		s = "sur"
+	while(True):
+		cv2.imshow(s,image)
+		cv2.waitKey(0)
 
 	
 

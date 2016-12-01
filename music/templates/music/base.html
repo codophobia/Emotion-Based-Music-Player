@@ -8,6 +8,7 @@
 <div id = "photo">
 </div>
 <div id = "leftbar">
+<button onclick="testing()">Test</button>
 </div>
 <div id = "header">
 <h1>Moody - Emotion Based Music Player</h1>
@@ -60,7 +61,7 @@
 </div>
 </div>
 <div id = "footer">
-<b><p style="padding:10px;">Created By - IIT2013163,11T2013056,IIT2013031</p></b>
+<b><p style="padding:10px;">Created By - IIT2013056, IIT2013131, IIT2013163</p></b>
 </div>
 <script>
 var isplay = 0;
@@ -90,9 +91,10 @@ document.getElementById('player').addEventListener("ended", function() {
     }
     else {
         cnt = 0;
+        clearInterval(t);
         mooddetect(0);
-        hcount = 0;
-        scount = 0;
+        t = setInterval(mooddetect,5000)
+
     }
 });
 document.getElementById('player').addEventListener("canplay", function() {
@@ -106,6 +108,23 @@ document.getElementById('player').addEventListener("timeupdate", function() {
 });
  var t;
  var pmood = "";
+function testing() {
+    $.ajax({
+    url: '/test/',
+    type:"POST",
+    cache:false,
+    success: function(data) {
+        var x = document.getElementById('leftbar');
+        var p = document.createElement('p');
+        p.innerHTML = "Happy:" + data.ha + "," + "Sad:" + data.sa + "," + "Surprise" + data.sua + "," + "Accuracy:" + data.score;
+        p.style.color = "black";
+        x.appendChild(p);
+    },
+    failure: function(data) { 
+        alert('Got an error dude');
+    }
+}); 
+}
 function mooddetect(z) {
     var b = document.getElementById('click');
     if(z == 1) {
@@ -154,7 +173,6 @@ function mooddetect(z) {
             if(cnt == 0) {
                 var data = input.result;
                 var fmood = input.fmood;
-                alert(fmood);
                 if(fmood == pmood) {
                     document.getElementById('next').click();
                 }
@@ -386,7 +404,6 @@ function listsongs() {
     type:"POST",
 	cache:false,
     success: function(data) {
-        
     	var y = document.getElementById('songlist');
     	var x = document.getElementById('songlist2');
     	y.innerHTML = "";

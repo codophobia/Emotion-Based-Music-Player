@@ -29,6 +29,7 @@ sucount = 0
 
 @csrf_exempt
 def clearcount(request):
+	print "hi"
 	global hcount,scount,sucount
 	hcount = scount = sucount = 0
 @csrf_exempt
@@ -94,11 +95,12 @@ def prev(request):
 		isplay = int(request.POST['isplay'])
 		currsong = request.POST['currsong']
 		if(isplay == 0):
-			next_song = Song.objects.all().filter(song_title__lt = currsong)[:1]
+			song = Song.objects.all().filter(song_title__lt = currsong).last()
+			next_song = Song.objects.get(song_title = song)
 		else:
 			pname = request.POST['pname']
 			p = Playlist.objects.get(name=pname)
-			next_song = p.songs.all().filter(song_title__lt = currsong)[:1]
+			next_song = p.songs.all().filter(song_title__lt = currsong).last()
 		data = serializers.serialize('json', next_song)
 		print data
 		return HttpResponse(data, content_type="application/json")
@@ -206,6 +208,7 @@ def vector(xpoints,ypoints,nxpoints,nypoints,xmean,ymean):
 
 detector = dlib.get_frontal_face_detector() #Face detector
 predictor = dlib.shape_predictor("./music/static/shape_predictor_68_face_landmarks.dat") #Landmark 
+clf = SVC(kernel='linear', probability=True, tol=1e-3)
 d = {"AF":0,"AN":1,"DI":2,"HA":3,"NE":4,"SA":5,"SU":6}
 def landmark_detector(frame):
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -247,6 +250,88 @@ def test(cnt):
 	image = cv2.imread(fname)
 	return landmark_detector(image)
 
+def trainfiles():
+	training_data = []
+	training_label = []
+	for files in os.listdir('./music/static/train'):
+		for file in os.listdir('./music/static/train/%s'%files):
+			fname = './music/static/train/%s/%s'%(files,file)
+			angle = file[6] 
+			exp = file[4] + file[5]
+			if angle == 'S':
+				image = cv2.imread(fname)
+				v = landmark_detector(image)
+				if len(v) > 0 and (exp == 'HA' or exp == 'SA' or exp == 'SU'):
+					training_data.append(v)
+					training_label.append(d[exp])
+
+	return training_data,training_label
+def train():
+	train_data,train_label = trainfiles()
+	data = np.array(train_data)
+	label = np.array(train_label)
+	clf.fit(data,label)
+	joblib.dump(clf, 'train.pkl') 
+@csrf_exempt
+def testfiles(request):
+	test_data = []
+	images = []
+	test_label = []
+	total = 0
+	d = {"HA":0,"SA":1,"SU":2}
+	ishappy = issad = issur = 0
+	nhappy = nsad = nsur = 0
+	for files in os.listdir('./music/static/test'):
+		for file in os.listdir('./music/static/test/%s'%files):
+			fname = './music/static/test/%s/%s'%(files,file)
+			angle = file[6] 
+			exp = file[4] + file[5]
+			if angle == 'S':
+				image = cv2.imread(fname)
+				v = landmark_detector(image)
+				if len(v) > 0 and exp == 'HA' or exp == 'SU' or exp == "SA":
+					if(exp == "HA"):
+						total = total + 1
+					test_data.append(v)
+					images.append(image)
+					test_label.append(d[exp])
+	for (data,label,image) in zip(test_data,test_label,images):
+		clf = joblib.load('train.pkl')
+		image1 = np.array(data)
+		mood = clf.predict(image1)
+		ans = mood[0]
+		s = ""
+		v = landmark_detector(image)
+		if(label == 2):
+			if(ans == 2):
+				issur = issur+1
+			else:
+				nsur = nsur + 1
+		elif label == 0:
+			if(ans == 0):
+				ishappy = ishappy+1
+			else:
+				nhappy = nhappy+1
+		elif label == 1:
+			if(ans == 1):
+				issad = issad+1
+			else:
+				nsad = nsad+1
+	print issur,ishappy,issad,nsur,nhappy,nsad
+	ha = float(float(ishappy)/(nhappy+ishappy))*100
+	sa = float(float(issad)/(nsad+issad))*100
+	sua = float(float(issur)/(nsur+issur))*100
+	td = np.array(test_data)
+	score = clf.score(td,test_label)*100
+	d = {}
+	d['ha'] = ha
+	d['sa'] = sa
+	d['sua'] = sua
+	d['score'] = score
+	data = json.dumps(d)
+	return HttpResponse(data, content_type="application/json")
+
+
 @csrf_exempt
 def mooddetect(request):
 	global hcount,ratio
@@ -269,6 +354,7 @@ def mooddetect(request):
 			else:
 				scount = scount + 1
 			if(int(cnt) == 0):
+				print hcount,scount,sucount
 				mx = max(hcount,scount,sucount)
 				if (mx == hcount):
 					x = "happy"
